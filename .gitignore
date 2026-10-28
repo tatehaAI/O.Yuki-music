@@ -1,0 +1,28 @@
+# 秘密情報（APIキー・パスワード・認証情報）
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+secrets*.json
+service-account*.json
+.dev.vars
+.npmrc
+
+# Cloudflare / ビルド関連
+.wrangler/
+node_modules/
+dist/
+.cache/
+
+# OS・エディタが作る不要ファイル
+Thumbs.db
+desktop.ini
+.DS_Store
+~$*
+.vscode/
+.idea/
+*.log
