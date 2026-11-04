@@ -281,6 +281,10 @@ html:not(.anim) .music__hint{display:none}
 .feedback__frame iframe{display:block;width:100%;height:2500px;border:0;background:#fff}
 @media (max-width:639px){.feedback__frame iframe{height:2950px}}
 @media (max-width:359px){.feedback__frame iframe{height:3250px}}
+/* 送信が終わったら、完了画面の大きさまで枠を縮める（余白をなくす） */
+.feedback__frame iframe{transition:height .6s var(--ease)}
+.feedback__frame.is-sent iframe{height:440px}
+@media (max-width:639px){.feedback__frame.is-sent iframe{height:560px}}
 .feedback__alt{margin-top:20px;font-size:13px}
 .feedback__alt a{display:inline-flex;align-items:center;gap:8px;border-bottom:1px solid currentColor;padding-bottom:2px;color:var(--ink-strong)}
 .feedback__alt svg{width:14px;height:14px}
@@ -748,6 +752,26 @@ Object.entries(ORBS).forEach(([id, list]) => {
     sec.prepend(o);
   });
 });
+
+/* ---------- 感想フォーム：送信後の余白をなくす ----------
+   Googleフォームは別サイトなので中身の高さは読めない。そのかわり「読み込み回数」で判断する。
+   1回目＝フォーム、2回目＝送信完了画面、3回目＝「別の回答を送信」でフォームに戻る…の繰り返し */
+(() => {
+  const frame = $('.feedback__frame'), iframe = frame && $('iframe', frame);
+  if (!iframe) return;
+  let loads = 0;
+  iframe.addEventListener('load', () => {
+    loads++;
+    const sent = loads % 2 === 0;
+    if (sent === frame.classList.contains('is-sent')) return;
+    frame.classList.toggle('is-sent', sent);
+    // 高さが変わり終わってから、スクロール演出の位置を計算し直す
+    setTimeout(() => { window.ScrollTrigger && ScrollTrigger.refresh(); }, 650);
+    // 完了画面（またはフォームの先頭）が見える位置まで戻す
+    const y = frame.getBoundingClientRect().top + scrollY - 120;
+    window.lenis ? lenis.scrollTo(y, { duration:1.2 }) : scrollTo({ top:y, behavior:'smooth' });
+  });
+})();
 
 /* ---------- modal ---------- */
 const modal = $('#modal'); let lastFocus;
