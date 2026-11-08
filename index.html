@@ -699,21 +699,22 @@ const NEWS = [
 
 /* SNS（いただいたURL） */
 const SNS = [
-  { key:'instagram', name:'Instagram', label:'O.YUKI OFFICIAL / CONTACT', id:'@oyuki4489', url:'https://www.instagram.com/oyuki4489/' },
-  { key:'instagram', name:'Instagram', label:'PIANO PERFORMANCE / ピアノ演奏', id:'@okutin38983', url:'https://www.instagram.com/okutin38983/' },
-  { key:'tiktok',    name:'TikTok',    label:'O.YUKI OFFICIAL / SHORT VIDEO', id:'@oyuki3471', url:'https://www.tiktok.com/@oyuki3471?is_from_webapp=1&sender_device=pc' },
-  { key:'youtube',   name:'YouTube',   label:'O.YUKI OFFICIAL / VIDEO', id:'@okura-q1e', url:'https://www.youtube.com/@okura-q1e' },
+  { key:'instagram', platform:'instagram', name:'Instagram', label:'O.YUKI OFFICIAL / CONTACT', id:'@oyuki4489', url:'https://www.instagram.com/oyuki4489/' },
+  { key:'instagram', platform:'instagram', name:'Instagram', label:'PIANO PERFORMANCE / ピアノ演奏', id:'@okutin38983', url:'https://www.instagram.com/okutin38983/' },
+  { key:'tiktok', platform:'tiktok',    name:'TikTok',    label:'O.YUKI OFFICIAL / SHORT VIDEO', id:'@oyuki3471', url:'https://www.tiktok.com/@oyuki3471?is_from_webapp=1&sender_device=pc' },
+  { key:'youtube', platform:'youtube',   name:'YouTube',   label:'O.YUKI OFFICIAL / VIDEO', id:'@okura-q1e', url:'https://www.youtube.com/@okura-q1e' },
 ];
 /* 配信サービス：アーティストページのURLを入れてください */
 const STREAMING = [
-  { key:'spotify', name:'Spotify',      label:'ARTIST PAGE', url:'' },
-  { key:'apple',   name:'Apple Music',  label:'ARTIST PAGE', url:'' },
-  { key:'amazon',  name:'Amazon Music', label:'ARTIST PAGE', url:'' },
+  { key:'spotify', platform:'spotify', name:'Spotify',      label:'ARTIST PAGE', url:'' },
+  { key:'apple', platform:'apple',   name:'Apple Music',  label:'ARTIST PAGE', url:'' },
+  { key:'amazon', platform:'amazon',  name:'Amazon Music', label:'ARTIST PAGE', url:'' },
 ];
 /* ヘッダー・フッターに出すアイコン */
 const HEADER_ICONS = [SNS[0], SNS[2], SNS[3]];
 /* お問い合わせ先（InstagramのDM） */
 const CONTACT_DM = 'https://ig.me/m/oyuki4489';
+const CONTACT_PLATFORM = 'instagram';   // お問い合わせの行き先（計測用）
 
 /* ========================================================= */
 
@@ -733,6 +734,22 @@ const $ = (s, el=document) => el.querySelector(s);
 const $$ = (s, el=document) => [...el.querySelectorAll(s)];
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad = n => String(n).padStart(2,'0');
+
+/* ---------- 計測（GA4）の共通部品 ----------
+   ・gtag は <head> で用意済み。自分の端末やダブルクリックで開いたときは GA4 本体を読み込まないので、何も送られない
+   ・リンクには data-track（種類）/ data-platform（行き先）/ data-location（押した場所）を付け、クリックは下の1か所でまとめて拾う */
+const trackEvent = (name, params) => { try { gtag('event', name, params || {}); } catch(e) {} };
+const trackAttrs = (kind, platform, location) => ` data-track="${kind}" data-platform="${esc(platform)}" data-location="${location}"`;
+const CLICK_EVENTS = { sns:'sns_click', contact:'contact_click', music_platform:'music_platform_click' };
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[data-track]'); if (!a) return;
+  const name = CLICK_EVENTS[a.dataset.track]; if (!name) return;
+  trackEvent(name, {
+    destination_platform: a.dataset.platform,
+    destination_url: a.href.split(/[?#]/)[0],   // ? や # から後ろは送らない
+    link_location: a.dataset.location,
+  });
+}, true);
 /* 端末の「動きを減らす」設定に関係なく、全員に同じアニメーションを表示する方針 */
 
 /* ---------- render ---------- */
@@ -740,11 +757,14 @@ $('#year').textContent = new Date().getFullYear();
 const NAV_JA = { latest:'最新リリース', music:'楽曲', news:'ニュース', profile:'プロフィール', sns:'SNS', feedback:'感想', contact:'お問い合わせ' };
 $('#navList').innerHTML = SECTIONS.map(([id]) => `<li><a href="#${id}" data-hover><span data-t="${NAV_JA[id]}">${NAV_JA[id]}</span></a></li>`).join('');
 $('#drawerList').innerHTML = SECTIONS.map(([id,n],i) => `<li><a href="#${id}"><small>${pad(i+1)}</small>${NAV_JA[id]}<em>${n}</em></a></li>`).join('');
-$$('[data-sns-icons]').forEach(el => el.innerHTML = HEADER_ICONS.map(s => `<a href="${s.url}" target="_blank" rel="noopener" aria-label="${s.name} ${s.id}" data-hover>${ICONS[s.key]}</a>`).join(''));
+$$('[data-sns-icons]').forEach(el => {
+  const loc = el.closest('#drawer') ? 'drawer' : el.closest('.footer') ? 'footer' : 'header';
+  el.innerHTML = HEADER_ICONS.map(s => `<a href="${s.url}" target="_blank" rel="noopener" aria-label="${s.name} ${s.id}" data-hover${trackAttrs('sns', s.platform, loc)}>${ICONS[s.key]}</a>`).join('');
+});
 
 const coverHTML = (r, i) => r.cover ? `<img src="${esc(r.cover)}" alt="${r.title ? esc(r.title)+' ' : ''}ジャケット画像" loading="lazy">` : `<div class="ph">＋ ジャケット画像を追加<br>（${pad(i+1)}）</div>`;
-const streamBtn = (url, key, name) => url
-  ? `<a class="btn" href="${esc(url)}" target="_blank" rel="noopener" data-hover>${ICONS[key]} ${name}</a>`
+const streamBtn = (url, key, name, loc) => url
+  ? `<a class="btn" href="${esc(url)}" target="_blank" rel="noopener" data-hover${trackAttrs('music_platform', key, loc)}>${ICONS[key]} ${name}</a>`
   : `<span class="btn" aria-disabled="true" title="${name}：配信準備中">${ICONS[key]} ${name} — COMING SOON</span>`;
 const PLAY_SVG = '<svg class="i-play" viewBox="0 0 20 20" fill="currentColor"><path d="M6 3.5v13l11-6.5z"/></svg><svg class="i-pause" viewBox="0 0 20 20" fill="currentColor"><rect x="4.5" y="3.5" width="4" height="13"/><rect x="11.5" y="3.5" width="4" height="13"/></svg>';
 function playerHTML(r, i){
@@ -777,7 +797,7 @@ const dateOf  = r => r.date  ? esc(r.date)  : '<span class="ph-text">リリー�
       <h3 class="latest__title" data-reveal>${titleOf(r)}</h3>
       <p class="latest__meta" data-reveal>RELEASE — ${dateOf(r)}</p>
       <div class="latest__embed" data-reveal>${embedHTML(r,0)}</div>
-      <div class="stream-btns" data-reveal>${streamBtn(r.spotify,'spotify','Spotify')}${streamBtn(r.apple,'apple','Apple Music')}${streamBtn(r.amazon,'amazon','Amazon Music')}</div>
+      <div class="stream-btns" data-reveal>${streamBtn(r.spotify,'spotify','Spotify','latest')}${streamBtn(r.apple,'apple','Apple Music','latest')}${streamBtn(r.amazon,'amazon','Amazon Music','latest')}</div>
     </div>`;
 })();
 
@@ -796,7 +816,7 @@ function renderMusic(type='ALL'){
   window.musicLoop && window.musicLoop.rebuild();
 }
 renderMusic();
-$('#musicStream').innerHTML = `<p>各配信サービスで配信予定です。</p>${streamBtn(STREAMING[0].url,'spotify','Spotify')}${streamBtn(STREAMING[1].url,'apple','Apple Music')}${streamBtn(STREAMING[2].url,'amazon','Amazon Music')}`;
+$('#musicStream').innerHTML = `<p>各配信サービスで配信予定です。</p>${streamBtn(STREAMING[0].url,'spotify','Spotify','music')}${streamBtn(STREAMING[1].url,'apple','Apple Music','music')}${streamBtn(STREAMING[2].url,'amazon','Amazon Music','music')}`;
 $('#musicFilter').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   $$('#musicFilter button').forEach(x => { x.classList.toggle('is-active', x===b); x.setAttribute('aria-selected', x===b); });
@@ -835,23 +855,23 @@ $('#newsFilter').addEventListener('click', e => {
 });
 
 // SNS
-const snsRow = s => {
+const snsRow = (s, kind) => {
   const inner = `<span class="sns__icon">${ICONS[s.key]}</span>
     <span class="sns__name">${s.name}<small>${s.label}</small></span>
     <span class="sns__id">${s.id ? esc(s.id) : (s.url ? '' : 'COMING SOON — 配信準備中')}</span>
     <span class="sns__go">${ICONS.out}</span>`;
-  return s.url ? `<li><a class="sns__row" href="${esc(s.url)}" target="_blank" rel="noopener" data-hover>${inner}</a></li>`
+  return s.url ? `<li><a class="sns__row" href="${esc(s.url)}" target="_blank" rel="noopener" data-hover${trackAttrs(kind, s.platform, 'follow')}>${inner}</a></li>`
                : `<li><div class="sns__row is-empty">${inner}</div></li>`;
 };
-$('#snsList').innerHTML = SNS.map(snsRow).join('');
-$('#streamList').innerHTML = STREAMING.map(snsRow).join('');
+$('#snsList').innerHTML = SNS.map(s => snsRow(s, 'sns')).join('');
+$('#streamList').innerHTML = STREAMING.map(s => snsRow(s, 'music_platform')).join('');
 
 // Contact
 $('#contactCards').innerHTML = [
   ['01','お仕事のご依頼','WORK','楽曲制作・タイアップなど、お仕事のご相談はこちらから。'],
   ['02','出演のご依頼','LIVE / EVENT','ライブ・イベントへの出演のご相談はこちらから。'],
   ['03','お問い合わせ','OTHERS','その他のご質問・ご連絡はこちらから。'],
-].map(([no,t,en,d]) => `<a class="contact__card" href="${CONTACT_DM}" target="_blank" rel="noopener" data-hover data-reveal>
+].map(([no,t,en,d]) => `<a class="contact__card" href="${CONTACT_DM}" target="_blank" rel="noopener" data-hover data-reveal${trackAttrs('contact', CONTACT_PLATFORM, 'contact')}>
     <span class="contact__no">${no}</span><span class="contact__ttl">${t}</span><span class="contact__en">${en}</span>
     <p class="contact__desc">${d}</p><span class="contact__link">${ICONS.dm} Instagram DMを送る</span></a>`).join('');
 
@@ -896,6 +916,8 @@ Object.entries(ORBS).forEach(([id, list]) => {
     const sent = loads % 2 === 0;
     if (sent === frame.classList.contains('is-sent')) return;
     frame.classList.toggle('is-sent', sent);
+    // 送信完了画面が出た＝送信したと推定して記録（実際の回答数とずれることがある）
+    if (sent) trackEvent('feedback_submit');
     // 高さが変わり終わってから、スクロール演出の位置を計算し直す
     setTimeout(() => { window.ScrollTrigger && ScrollTrigger.refresh(); }, 650);
     // 完了画面（またはフォームの先頭）が見える位置まで戻す
@@ -907,6 +929,57 @@ Object.entries(ORBS).forEach(([id, list]) => {
 /* ---------- preview player（試聴） ----------
    同時に鳴るのは1曲だけ。最新リリース欄と詳細画面は同じ曲なら同じ再生状態を表示 */
 const fmtTime = s => (isFinite(s) && s > 0) ? `${Math.floor(s/60)}:${pad(Math.floor(s%60))}` : '0:00';
+/* 曲の再生の計測
+   ・music_play     …「最初から聴き始めた1回目」に、実際に音が出始めた（playing）とき
+   ・music_resume   … 一時停止から続きを再生したとき
+   ・music_pause    … ユーザーが一時停止ボタンを押したとき（曲の終わり・別の曲の再生・詳細画面を閉じたことによる自動停止は数えない）
+   ・music_progress … 25 / 50 / 75% に「聴いて」届いたとき。シークバーで飛び越えた段階は送らない。各段階1回だけ
+   ・music_complete … 最後まで聴いたとき。先頭に戻るので、次の再生は再び music_play になる
+   ・music_error    … 再生できなかったとき（エラーの種類だけ）
+   正式な音源に差し替えるときは、RELEASES の audio と AUDIO_IS_DEMO を変えるだけで、そのまま計測が続く */
+const AUDIO_TYPE = AUDIO_IS_DEMO ? 'demo' : 'official';
+const musicState = [];
+const musicParams = (a, i, extra) => Object.assign({
+  track_id: RELEASES[i].id, track_title: RELEASES[i].title, audio_type: AUDIO_TYPE,
+  player_location: musicState[i].loc,
+  progress_percent: a.duration ? Math.round(a.currentTime / a.duration * 100) : 0,
+}, extra);
+const MEDIA_ERRORS = { 1:'aborted', 2:'network', 3:'decode', 4:'src_not_supported' };
+function musicMeasure(a, i){
+  const s = musicState[i] = { loc:'latest', started:false, paused:false, userPause:false, seeked:false, lastT:0, sent:{} };
+  a.addEventListener('playing', () => {
+    if (!s.started) { s.started = true; trackEvent('music_play', musicParams(a, i)); }
+    else if (s.paused) trackEvent('music_resume', musicParams(a, i));
+    s.paused = false; s.lastT = a.currentTime;
+  });
+  a.addEventListener('pause', () => {
+    if (a.ended) return;
+    s.paused = true;
+    if (s.userPause) { s.userPause = false; trackEvent('music_pause', musicParams(a, i)); }
+  });
+  a.addEventListener('seeking', () => { s.seeked = true; });
+  a.addEventListener('timeupdate', () => {
+    const t = a.currentTime;
+    if (s.seeked || !a.duration) { s.seeked = false; s.lastT = t; return; }
+    const prev = s.lastT / a.duration * 100, now = t / a.duration * 100;
+    s.lastT = t;
+    [25, 50, 75].forEach(m => {
+      if (!s.sent[m] && prev < m && now >= m) { s.sent[m] = true; trackEvent('music_progress', musicParams(a, i, { progress_percent:m })); }
+    });
+  });
+  a.addEventListener('ended', () => {
+    trackEvent('music_complete', musicParams(a, i, { progress_percent:100 }));
+    Object.assign(s, { started:false, paused:false, userPause:false, lastT:0, sent:{} });
+  });
+  a.addEventListener('error', () => {
+    trackEvent('music_error', musicParams(a, i, { error_type: MEDIA_ERRORS[a.error && a.error.code] || 'unknown' }));
+  });
+}
+const musicPlayError = (i, err) => {
+  if (err && err.name === 'AbortError') return;   // 再生ボタンを素早く押し直したときに出るだけで、本当のエラーではない
+  if (tracks[i].error) return;                    // 音源ファイル自体のエラーは、上の error の合図ですでに記録済み
+  trackEvent('music_error', musicParams(tracks[i], i, { error_type: (err && err.name) || 'unknown' }));
+};
 const tracks = RELEASES.map(r => {
   if (!r.audio) return null;
   const a = new Audio(); a.preload = 'metadata'; a.src = r.audio; return a;
@@ -938,12 +1011,14 @@ tracks.forEach((a, i) => {
   ['loadedmetadata','durationchange','timeupdate','pause'].forEach(ev => a.addEventListener(ev, () => syncPlayer(i)));
   a.addEventListener('play', () => { syncPlayer(i); if (!rafOn) { rafOn = true; window.requestAnimationFrame(tick); } });
   a.addEventListener('ended', () => { a.currentTime = 0; syncPlayer(i); });
+  musicMeasure(a, i);
 });
 document.addEventListener('click', e => {
   const b = e.target.closest('.player__btn'); if (!b) return;
   const i = +b.closest('[data-player]').dataset.player, a = tracks[i];
-  if (a.paused){ tracks.forEach((t,j) => t && j !== i && t.pause()); a.play().catch(() => {}); }
-  else a.pause();
+  musicState[i].loc = b.closest('#modal') ? 'modal' : 'latest';
+  if (a.paused){ tracks.forEach((t,j) => t && j !== i && t.pause()); a.play().catch(err => musicPlayError(i, err)); }
+  else { musicState[i].userPause = true; a.pause(); }
 });
 document.addEventListener('input', e => {
   const s = e.target.closest('.player__seek'); if (!s) return;
@@ -965,12 +1040,25 @@ document.addEventListener('click', e => {
     <h3 class="latest__title" id="modalTitle" style="font-size:clamp(26px,3vw,40px)">${titleOf(r)}</h3>
     <p class="latest__meta">RELEASE — ${dateOf(r)}</p>
     <div class="latest__embed">${embedHTML(r,i)}</div>
-    <div class="stream-btns">${streamBtn(r.spotify,'spotify','Spotify')}${streamBtn(r.apple,'apple','Apple Music')}${streamBtn(r.amazon,'amazon','Amazon Music')}</div>`;
+    <div class="stream-btns">${streamBtn(r.spotify,'spotify','Spotify','modal')}${streamBtn(r.apple,'apple','Apple Music','modal')}${streamBtn(r.amazon,'amazon','Amazon Music','modal')}</div>`;
   lastFocus = c; modal.classList.add('is-open'); syncPlayer(i); window.lenis && lenis.stop(); $('.modal__close').focus();
 });
 const closeModal = () => { stopAll(); modal.classList.remove('is-open'); window.lenis && lenis.start(); lastFocus && lastFocus.focus(); setTimeout(()=>{ if(!modal.classList.contains('is-open')) $('#modalBody').innerHTML=''; }, 800); };
 modal.addEventListener('click', e => { if (e.target.closest('[data-close]')) closeModal(); });
 document.addEventListener('keydown', e => { if (e.key==='Escape' && modal.classList.contains('is-open')) closeModal(); });
+
+/* ---------- どのセクションまで見たか（section_view：各セクション1回の訪問につき1回） ---------- */
+(() => {
+  if (!('IntersectionObserver' in window)) return;
+  const seen = {};
+  const io = new IntersectionObserver(entries => entries.forEach(en => {
+    const id = en.target.id;
+    if (!en.isIntersecting || seen[id]) return;
+    seen[id] = true; io.unobserve(en.target);
+    trackEvent('section_view', { section_name: id });
+  }), { rootMargin:'0px 0px -40% 0px' });   // セクションの上端が画面の上から6割の位置まで来たら「見た」
+  ['latest','music','news','profile','sns','feedback','contact'].forEach(id => { const el = document.getElementById(id); el && io.observe(el); });
+})();
 
 /* ---------- privacy policy ---------- */
 const privacy = $('#privacy'); let privacyFocus;
