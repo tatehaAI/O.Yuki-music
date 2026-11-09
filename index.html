@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 開いた最初の瞬間から黒いローディング画面を出す（トップ画面が一瞬見えてしまうのを防ぐ）。
+     万一アニメーションが動かなくても、CSSの安全装置で7秒後には必ず消える -->
+<script>document.documentElement.classList.add('loading');</script>
 <title>O.Yuki Official Website</title>
 <meta name="description" content="O.Yuki｜作曲家・音楽クリエイター オフィシャルウェブサイト。曲を描きます。">
 <meta property="og:title" content="O.Yuki Official Website">
@@ -88,6 +91,14 @@ h1,h2,h3,p{margin:0}
 .progress{position:fixed;top:0;left:0;right:0;height:2px;background:var(--ink);transform-origin:left;transform:scaleX(0);z-index:60}
 .cursor{position:fixed;top:0;left:0;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:var(--ink-strong);pointer-events:none;z-index:90;mix-blend-mode:difference;background:#fff;opacity:0;transition:width .35s var(--ease),height .35s var(--ease),margin .35s var(--ease),opacity .3s}
 .cursor.is-hover{width:56px;height:56px;margin:-28px 0 0 -28px}
+.cursor__label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#fff;opacity:0;transform:scale(.6);transition:opacity .3s,transform .5s var(--ease)}
+.cursor__label svg{width:16px;height:16px;margin-left:2px}
+.cursor__label b{font-size:11px;font-weight:700;letter-spacing:.22em;margin-left:.22em}
+.cursor__label small{font-size:10px;letter-spacing:.2em;opacity:.8}
+.cursor.is-listen{width:112px;height:112px;margin:-56px 0 0 -56px;mix-blend-mode:normal;background:rgba(17,17,17,.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 0 0 1px rgba(255,255,255,.35)}
+.cursor.is-listen .cursor__label{opacity:1;transform:none}
+/* マウスの丸に「聴く」が出ているあいだは、角の再生マークは控えめに */
+@media (hover:hover) and (pointer:fine){.music__viewport:hover .card__play{opacity:.0}}
 @media (hover:hover) and (pointer:fine){.cursor.is-on{opacity:1}}
 .indicator{position:fixed;left:var(--gutter);bottom:24px;z-index:40;font-size:11px;letter-spacing:.25em;color:var(--muted);display:flex;gap:12px;align-items:center;mix-blend-mode:difference;color:#aaa}
 .indicator__num{font-variant-numeric:tabular-nums;color:#fff}
@@ -201,14 +212,34 @@ html:not(.anim) .music__track{padding-left:var(--gutter)}
 .music__stream{display:flex;align-items:center;flex-wrap:wrap;gap:10px 12px;padding:48px var(--gutter) 0}
 .music__stream p{font-size:13px;color:var(--muted);margin-right:8px}
 .music__stream .btn{height:48px;padding:0 20px}
-.music__hint{padding:20px var(--gutter) 0;font-size:11px;letter-spacing:.2em;color:var(--muted)}
-html:not(.anim) .music__hint{display:none}
+.music__ctrl{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px var(--gutter) 0}
+.music__hint{font-size:11px;letter-spacing:.2em;color:var(--muted)}
+.music__arrows{display:flex;gap:10px;flex:none}
+.music__arrows button{width:48px;height:48px;border-radius:50%;border:1px solid var(--ink-strong);display:grid;place-items:center;color:var(--ink-strong);background:rgba(255,255,255,.7);transition:background .3s,color .3s}
+.music__arrows button:hover{background:var(--ink-strong);color:#fff}
+.music__arrows svg{width:16px;height:16px}
+html:not(.anim) .music__hint,html:not(.anim) .music__arrows{display:none}
+/* 自分で横に動かせるようにする：縦の動きはページのスクロール、横の動きはジャケットに */
+.anim .music__viewport{touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none}
+.anim .music__viewport.is-dragging{cursor:grabbing}
+.music__viewport img{-webkit-user-drag:none}
 .card{width:clamp(260px,28vw,420px);flex:none;text-align:left;display:block}
 .card__cover{aspect-ratio:1;overflow:hidden;position:relative}
 .card__cover .ph,.card__cover img{width:100%;height:100%;object-fit:cover;transition:transform 1s var(--ease)}
 .card:hover .card__cover img,.card:hover .card__cover .ph{transform:scale(1.05)}
 .card__cover::after{content:"PLAY";position:absolute;right:14px;bottom:14px;font-size:10px;letter-spacing:.25em;background:#fff;color:var(--ink-strong);padding:6px 10px;transform:translateY(8px);opacity:0;transition:.5s var(--ease)}
 .card:hover .card__cover::after{transform:none;opacity:1}
+/* 「タップすると聴ける」マーク：今の「PLAY」の文字の代わり */
+.card__cover::after{display:none!important}
+.card__play{position:absolute;right:16px;bottom:16px;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;color:#fff;
+  background:rgba(17,17,17,.42);border:1px solid rgba(255,255,255,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  box-shadow:0 10px 30px -10px rgba(0,0,0,.5);transition:transform .5s var(--ease),background .4s,opacity .4s}
+.card__play svg{width:20px;height:20px;margin-left:3px}
+.card__play::before,.card__play::after{content:"";position:absolute;inset:-1px;border-radius:50%;border:1px solid rgba(255,255,255,.7);animation:playRipple 2.6s ease-out infinite;pointer-events:none}
+.card__play::after{animation-delay:1.3s}
+@keyframes playRipple{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.9);opacity:0}}
+.card:hover .card__play{transform:scale(1.12);background:rgba(17,17,17,.62)}
+@media (max-width:899px){.card__play{width:46px;height:46px;right:12px;bottom:12px}.card__play svg{width:17px;height:17px}}
 .card__num{font-size:11px;letter-spacing:.2em;color:var(--muted);margin-top:18px;display:flex;justify-content:space-between}
 .card__type{border:1px solid var(--line);padding:2px 8px;font-size:10px}
 .card__title{margin-top:8px;font-size:18px;font-weight:700;letter-spacing:.04em;color:var(--ink-strong)}
@@ -256,6 +287,7 @@ html:not(.anim) .music__hint{display:none}
 .profile__stat::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(60% 120% at 100% 0%,rgba(240,222,70,.25),transparent 70%),radial-gradient(60% 120% at 0% 100%,rgba(74,120,194,.18),transparent 70%)}
 .profile__stat-num{font-size:clamp(44px,5.5vw,72px);font-weight:900;line-height:1;letter-spacing:-.02em;color:var(--ink-strong);font-variant-numeric:tabular-nums}
 .profile__stat-num small{font-size:.32em;font-weight:500;letter-spacing:.1em;margin:0 .2em}
+.profile__stat-num small.pre{display:block;margin:0 0 .5em;font-size:.26em;letter-spacing:.2em;color:var(--muted)}
 .profile__stat-cap{margin-top:10px;font-size:12px;letter-spacing:.15em;color:var(--muted)}
 .profile__tags{margin-top:28px;display:flex;flex-wrap:wrap;gap:8px;max-width:520px}
 .profile__tags li{font-size:11px;letter-spacing:.15em;padding:6px 14px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.6)}
@@ -418,7 +450,7 @@ html:not(.anim) .music__hint{display:none}
 </div>
 
 <div class="progress" id="progress"></div>
-<div class="cursor" id="cursor" aria-hidden="true"></div>
+<div class="cursor" id="cursor" aria-hidden="true"><span class="cursor__label"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M7 4.5v11l9-5.5z"/></svg><b>LISTEN</b><small>聴く</small></span></div>
 <div class="indicator" id="indicator" aria-hidden="true"><span class="indicator__num" id="indNum">00</span><span class="indicator__line"></span><span id="indName">TOP</span></div>
 
 <!-- ヘッダー -->
@@ -480,7 +512,13 @@ html:not(.anim) .music__hint{display:none}
     <div class="music__viewport" id="musicViewport">
       <div class="music__track" id="musicTrack"></div>
     </div>
-    <p class="music__hint" aria-hidden="true">ジャケットをタップ／クリックして詳細へ</p>
+    <div class="music__ctrl">
+      <p class="music__hint" aria-hidden="true">ジャケットをタップして試聴 ／ 左右にスワイプで移動</p>
+      <div class="music__arrows">
+        <button type="button" data-music-dir="-1" aria-label="前のジャケットへ" data-hover><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 8H3M7 4L3 8l4 4"/></svg></button>
+        <button type="button" data-music-dir="1" aria-label="次のジャケットへ" data-hover><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg></button>
+      </div>
+    </div>
     <div class="music__stream" id="musicStream"></div>
     <div class="to-feedback to-feedback--music" data-reveal>
       <p>聴いてみた感想を、ぜひ聞かせてください。</p>
@@ -514,14 +552,14 @@ html:not(.anim) .music__hint{display:none}
         <p class="profile__role" data-reveal>作曲家・音楽クリエイター<span>COMPOSER / MUSIC CREATOR</span></p>
         <p class="profile__lead" id="profileLead">O.Yukiです。<br>曲を描きます。</p>
         <div class="profile__bio">
-          <p data-reveal>吹奏楽やピアノで培った音楽経験をもとに、作曲・編曲を中心とした音楽制作を行う。</p>
-          <p data-reveal>Logic Proなどの音楽制作ソフトを活用し、J-POPからエレクトロニックミュージックまで、幅広いジャンルの楽曲を制作。</p>
-          <p data-reveal>オリジナル楽曲「<strong>濁流</strong>」がTikTokで約50万回再生を記録。YouTubeやSpotifyなどでも楽曲を発信し、SNSを通じて自身の音楽を届けている。</p>
-          <p data-reveal>独自のメロディとサウンドを追求しながら、ジャンルにとらわれない音楽表現を目指して活動中。</p>
+          <p data-reveal>現役高校生の音楽クリエイター。</p>
+          <p data-reveal>ピアノ演奏・作曲を中心に活動。TikTok・Instagramの総フォロワー数は3,100人を突破し、TikTokでは累計いいね数10万件以上、演奏動画では16万回以上の再生を記録。</p>
+          <p data-reveal>演奏から楽曲制作まで幅広く挑戦し、自分だけの音楽表現を追求しています。</p>
+          <p data-reveal>高校生ならではの自由な発想で、聴く人の心に残る音楽を届けます。</p>
         </div>
         <div class="profile__stat" data-reveal>
-          <p class="profile__stat-num"><small>約</small><span id="statNum">50</span>万<small>回再生</small></p>
-          <p class="profile__stat-cap">オリジナル楽曲「濁流」／ TikTok</p>
+          <p class="profile__stat-num"><small class="pre">総フォロワー</small><span id="statNum">3,100</span><small>人突破</small></p>
+          <p class="profile__stat-cap">TikTok・Instagram 合計</p>
         </div>
         <ul class="profile__tags" data-reveal>
           <li>作曲</li><li>編曲</li><li>Piano</li><li>吹奏楽</li><li>Logic Pro</li><li>J-POP</li><li>Electronic</li>
@@ -808,7 +846,7 @@ function renderMusic(type='ALL'){
   const list = RELEASES.map((r,i)=>({r,i})).filter(({r}) => type==='ALL' || r.type===type);
   $('#musicTrack').innerHTML = !list.length ? `<p class="music__empty">この種別の楽曲はまだありません。</p>` : `<div class="music__set">` + list.map(({r,i}) => `
     <button class="card" data-idx="${i}" data-hover aria-label="${r.title ? esc(r.title) : '楽曲 '+(i+1)} の詳細を開く">
-      <div class="card__cover">${coverHTML(r,i)}</div>
+      <div class="card__cover">${coverHTML(r,i)}<span class="card__play" aria-hidden="true"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M7 4.5v11l9-5.5z"/></svg></span></div>
       <div class="card__num"><span>No.${pad(i+1)}</span><span class="card__type">${r.type ? esc(r.type) : 'TYPE'}</span></div>
       <p class="card__title">${titleOf(r)}</p>
       <p class="card__date">${dateOf(r)}</p>
@@ -1159,7 +1197,7 @@ if (!window.gsap || !window.ScrollTrigger){
   setTimeout(() => { if (loader.style.display !== 'none') { intro.progress(1); hideLoader(); lenis && lenis.start(); } }, 6000);
 
   // --- Hero scroll (parallax + letters drift) ---
-  gsap.to('#heroImg', { yPercent:12, scale:1.12, ease:'none', scrollTrigger:{ trigger:'.hero', start:'top top', end:'bottom top', scrub:true } });
+  // トップの写真はスクロールしても拡大・移動させない（開いたときの見え方のまま）
   gsap.to('#heroTitle', { yPercent:-40, ease:'none', scrollTrigger:{ trigger:'.hero', start:'top top', end:'bottom top', scrub:true } });
   heroChars.forEach((c,i) => gsap.to(c, { x:(i - heroChars.length/2) * 18, rotate:(i%2?6:-6), opacity:.15, ease:'none', scrollTrigger:{ trigger:'.hero', start:'top top', end:'bottom top', scrub:true } }));
 
@@ -1228,9 +1266,55 @@ if (!window.gsap || !window.ScrollTrigger){
     });
     const pause = () => { clearTimeout(resumeT); target = 0; };
     const resume = (delay = 0) => { clearTimeout(resumeT); resumeT = setTimeout(() => target = BASE, delay); };
-    // マウスを乗せても止めない。スマホで指が触れている間と、キーボード操作中だけ止める
-    vp.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') pause(); });
-    ['pointerup','pointercancel'].forEach(t => vp.addEventListener(t, e => { if (e.pointerType !== 'mouse') resume(1500); }));
+    const wrap = () => { if (!setW) return; while (x <= -setW) x += setW; while (x > 0) x -= setW; };
+
+    // --- 見る人が自分で横に動かせる（スワイプ・ドラッグ・トラックパッドの横スクロール・矢印ボタン） ---
+    // 手を離すと少しすべってから止まり、1.5秒後に自動の流れに戻る
+    let drag = null, moved = false, fling = 0;
+    gsap.ticker.add(() => {
+      if (!setW || drag || Math.abs(fling) < 0.05) { fling = drag ? fling : 0; return; }
+      x += fling * gsap.ticker.deltaRatio(); fling *= 0.93; wrap(); gsap.set(tr, { x });
+    });
+    vp.addEventListener('dragstart', e => e.preventDefault());
+    vp.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      pause(); fling = 0; moved = false;
+      drag = { id:e.pointerId, sx:e.clientX, sy:e.clientY, lx:e.clientX, axis:null, touch:e.pointerType !== 'mouse' };
+    });
+    vp.addEventListener('pointermove', e => {
+      if (!drag || e.pointerId !== drag.id) return;
+      if (!drag.axis){
+        const ax = Math.abs(e.clientX - drag.sx), ay = Math.abs(e.clientY - drag.sy);
+        if (ax < 6 && ay < 6) return;
+        drag.axis = ax > ay ? 'x' : 'y';
+        if (drag.axis === 'y'){ drag = null; resume(1500); return; }   // 縦の動きはページのスクロールに任せる
+        moved = true; vp.classList.add('is-dragging');
+        try { vp.setPointerCapture(e.pointerId); } catch(_){}
+      }
+      const dx = e.clientX - drag.lx; drag.lx = e.clientX;
+      x += dx; fling = dx; wrap(); gsap.set(tr, { x });
+    });
+    const endDrag = e => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const wasTouch = drag.touch; drag = null; vp.classList.remove('is-dragging');
+      resume(moved ? 1500 : (wasTouch ? 1500 : 0));
+    };
+    ['pointerup','pointercancel'].forEach(t => vp.addEventListener(t, endDrag));
+    // ドラッグしたときは詳細画面を開かない（軽くタップ／クリックしたときだけ開く）
+    vp.addEventListener('click', e => { if (moved){ e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
+    // トラックパッドの横スクロール（縦スクロールはページのまま）
+    vp.addEventListener('wheel', e => {
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      e.preventDefault(); e.stopPropagation();
+      pause(); fling = 0; x -= e.deltaX; wrap(); gsap.set(tr, { x }); resume(1500);
+    }, { passive:false });
+    // 矢印ボタン：ジャケット1枚分ずつ動かす
+    const step = () => { const c = $('.card', tr); return c ? c.offsetWidth + parseFloat(getComputedStyle($('.music__set', tr)).columnGap || 0) : 300; };
+    $$('[data-music-dir]').forEach(btn => btn.addEventListener('click', () => {
+      pause(); fling = 0;
+      const o = { p:0 }; let last = 0; const dist = -step() * Number(btn.dataset.musicDir);
+      gsap.to(o, { p:dist, duration:.8, ease:'power3.out', onUpdate(){ x += o.p - last; last = o.p; wrap(); gsap.set(tr, { x }); }, onComplete(){ resume(1500); } });
+    }));
     let tabbing = false;
     addEventListener('keydown', e => { if (e.key === 'Tab') tabbing = true; });
     addEventListener('pointerdown', () => tabbing = false);
@@ -1248,9 +1332,9 @@ if (!window.gsap || !window.ScrollTrigger){
   lead.innerHTML = lead.innerHTML.split(/<br\s*\/?>/i).map(l => [...l].map(c => `<span class="w">${c}</span>`).join('')).join('<br>');
   gsap.to('#profileLead .w', { color:'#111', stagger:.1, ease:'none', scrollTrigger:{ trigger:lead, start:'top 80%', end:'bottom 45%', scrub:true } });
 
-  // --- Profile: 再生数カウントアップ ---
+  // --- Profile: 総フォロワー数カウントアップ ---
   const sn = { v:0 }; $('#statNum').textContent = '0';
-  gsap.to(sn, { v:50, duration:2, ease:'power3.out', scrollTrigger:{ trigger:'.profile__stat', start:'top 85%' }, onUpdate(){ $('#statNum').textContent = Math.round(sn.v); } });
+  gsap.to(sn, { v:3100, duration:2.2, ease:'power3.out', scrollTrigger:{ trigger:'.profile__stat', start:'top 85%' }, onUpdate(){ $('#statNum').textContent = Math.round(sn.v).toLocaleString('en-US'); } });
 
   // --- SNS rows slide ---
   $$('.sns__list').forEach(list => gsap.from($$('li', list), { x:80, opacity:0, duration:1, stagger:.08, ease:'expo.out', scrollTrigger:{ trigger:list, start:'top 85%' } }));
@@ -1266,8 +1350,8 @@ if (!window.gsap || !window.ScrollTrigger){
     gsap.fromTo(o, { yPercent:-d, xPercent:d*.25, scale:.85, rotate:-10 }, { yPercent:d, xPercent:-d*.25, scale:1.1, rotate:10, ease:'none',
       scrollTrigger:{ trigger:sec, start:'top bottom', end:'bottom top', scrub:1.2 } });
   });
-  // 写真に重ねた青のグラデーションがスクロールで濃くなる
-  gsap.fromTo('#heroTint', { opacity:0 }, { opacity:1, ease:'none', scrollTrigger:{ trigger:'.hero', start:'top top', end:'bottom top', scrub:true } });
+  // トップの写真の色もスクロールで変えない（青の重ね色は使わない）
+  gsap.set('#heroTint', { opacity:0 });
   $$('[data-tint]').forEach(t => gsap.fromTo(t, { opacity:.9 }, { opacity:.2, ease:'none', scrollTrigger:{ trigger:t.parentElement, start:'top bottom', end:'bottom top', scrub:true } }));
   // 背景全体の色味がセクションごとに切り替わる
   const AMB = {
@@ -1304,7 +1388,11 @@ if (!window.gsap || !window.ScrollTrigger){
     const cur = $('#cursor');
     const xTo = gsap.quickTo(cur, 'x', { duration:.4, ease:'power3' }), yTo = gsap.quickTo(cur, 'y', { duration:.4, ease:'power3' });
     addEventListener('mousemove', e => { cur.classList.add('is-on'); xTo(e.clientX); yTo(e.clientY); });
-    document.addEventListener('mouseover', e => cur.classList.toggle('is-hover', !!e.target.closest('a,button,[data-hover]')));
+    document.addEventListener('mouseover', e => {
+      const listen = !!e.target.closest('#musicViewport .card');
+      cur.classList.toggle('is-listen', listen);
+      cur.classList.toggle('is-hover', !listen && !!e.target.closest('a,button,[data-hover]'));
+    });
   }
 
   addEventListener('load', () => ScrollTrigger.refresh());
