@@ -335,18 +335,37 @@ html:not(.anim) .music__hint,html:not(.anim) .music__arrows{display:none}
 
 /* ---------- feedback（Googleフォーム） ---------- */
 .feedback__lead{max-width:640px;font-size:15px;line-height:2.1}
-.feedback__frame{margin-top:clamp(32px,4vw,56px);max-width:760px;background:rgba(255,255,255,.6);border:1px solid var(--line);box-shadow:0 40px 80px -50px rgba(120,140,170,.6)}
-/* フォームの「送信」ボタンまで切れずに見える高さ（実測：PC 約2,130px／375px幅 約2,600px／320px幅 約2,850px＋余裕） */
-.feedback__frame iframe{display:block;width:100%;height:2500px;border:0;background:#fff}
-@media (max-width:639px){.feedback__frame iframe{height:2950px}}
-@media (max-width:359px){.feedback__frame iframe{height:3250px}}
-/* 送信が終わったら、完了画面の大きさまで枠を縮める（余白をなくす） */
-.feedback__frame iframe{transition:height .6s var(--ease)}
-.feedback__frame.is-sent iframe{height:440px}
-@media (max-width:639px){.feedback__frame.is-sent iframe{height:560px}}
-.feedback__alt{margin-top:20px;font-size:13px}
-.feedback__alt a{display:inline-flex;align-items:center;gap:8px;border-bottom:1px solid currentColor;padding-bottom:2px;color:var(--ink-strong)}
-.feedback__alt svg{width:14px;height:14px}
+/* 感想フォームへの大きなボタン（フォームは埋め込まず、新しいタブで開く） */
+.fb-cta{position:relative;isolation:isolate;overflow:hidden;margin-top:clamp(32px,4vw,56px);max-width:960px;display:flex;align-items:center;justify-content:space-between;gap:32px;
+  padding:clamp(32px,4.5vw,64px) clamp(28px,4.5vw,64px);border-radius:28px;background:var(--ink-strong);color:#fff;
+  box-shadow:0 50px 100px -50px rgba(74,120,194,.75);transition:transform .6s var(--ease),box-shadow .6s var(--ease)}
+.fb-cta:hover{transform:translateY(-4px);box-shadow:0 60px 110px -46px rgba(74,120,194,.9)}
+.fb-cta__glow{position:absolute;z-index:-1;border-radius:50%;pointer-events:none;filter:blur(10px);transition:transform 1.2s var(--ease)}
+.fb-cta__glow--a{width:520px;height:520px;right:-140px;top:-260px;background:radial-gradient(closest-side,rgba(74,120,194,.75),transparent);animation:fbFloat 9s ease-in-out infinite alternate}
+.fb-cta__glow--b{width:420px;height:420px;left:-120px;bottom:-260px;background:radial-gradient(closest-side,rgba(240,222,70,.45),transparent);animation:fbFloat 11s ease-in-out infinite alternate-reverse}
+@keyframes fbFloat{to{transform:translate(-30px,30px) scale(1.08)}}
+.fb-cta::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;border:1px solid rgba(255,255,255,.14);pointer-events:none}
+.fb-cta__body{display:flex;flex-direction:column;gap:18px;min-width:0}
+.fb-cta__eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.3em;color:rgba(255,255,255,.7)}
+.fb-cta__eyebrow i{position:relative;width:8px;height:8px;border-radius:50%;background:#f0de46}
+.fb-cta__eyebrow i::after{content:"";position:absolute;inset:0;border-radius:50%;background:#f0de46;animation:fbPulse 2s ease-out infinite}
+@keyframes fbPulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(3.2);opacity:0}}
+.fb-cta__title{font-size:clamp(40px,6vw,84px);font-weight:900;line-height:1.05;letter-spacing:.02em;display:flex;flex-direction:column;gap:10px}
+.fb-cta__title small{font-family:'Roboto',sans-serif;font-size:clamp(13px,1.3vw,16px);font-weight:500;letter-spacing:.3em;color:rgba(255,255,255,.6);text-transform:uppercase}
+.fb-cta__meta{display:flex;flex-wrap:wrap;gap:8px}
+.fb-cta__meta span{font-size:12px;letter-spacing:.1em;padding:7px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06)}
+.fb-cta__go{position:relative;flex:none;width:clamp(132px,13vw,168px);aspect-ratio:1;display:grid;place-items:center}
+.fb-cta__ring{position:absolute;inset:0;width:100%;height:100%;animation:fbSpin 14s linear infinite}
+.fb-cta__ring text{fill:rgba(255,255,255,.75);font-size:9.4px;letter-spacing:.18em;font-weight:500}
+@keyframes fbSpin{to{transform:rotate(360deg)}}
+.fb-cta__arrow{width:56%;aspect-ratio:1;border-radius:50%;background:#fff;color:var(--ink-strong);display:grid;place-items:center;transition:transform .6s var(--ease),background .4s}
+.fb-cta__arrow svg{width:34%;height:34%}
+.fb-cta:hover .fb-cta__arrow{transform:scale(1.08) rotate(45deg);background:#f0de46}
+.fb-cta__note{margin-top:16px;font-size:12px;color:var(--muted);letter-spacing:.06em}
+@media (max-width:699px){
+  .fb-cta{flex-direction:column;align-items:flex-start;border-radius:22px;gap:24px}
+  .fb-cta__go{align-self:flex-end;width:120px;margin-top:-8px}
+}
 .to-feedback{margin-top:clamp(40px,5vw,64px);display:flex;align-items:center;flex-wrap:wrap;gap:14px 20px}
 .to-feedback p{font-size:13px;color:var(--muted);letter-spacing:.08em}
 .to-feedback--music{padding:0 var(--gutter)}
@@ -553,7 +572,7 @@ html:not(.anim) .music__hint,html:not(.anim) .music__arrows{display:none}
         <p class="profile__lead" id="profileLead">O.Yukiです。<br>曲を描きます。</p>
         <div class="profile__bio">
           <p data-reveal>現役高校生の音楽クリエイター。</p>
-          <p data-reveal>ピアノ演奏・作曲を中心に活動。TikTok・Instagramの総フォロワー数は3,100人を突破し、TikTokでは累計いいね数10万件以上、演奏動画では16万回以上の再生を記録。</p>
+          <p data-reveal>ピアノ演奏・作曲を中心に活動。TikTok・Instagramの総フォロワー数は3,100人を突破し、TikTokでは累計いいね数10万件以上、演奏動画では累計120万回以上の再生を記録。</p>
           <p data-reveal>演奏から楽曲制作まで幅広く挑戦し、自分だけの音楽表現を追求しています。</p>
           <p data-reveal>高校生ならではの自由な発想で、聴く人の心に残る音楽を届けます。</p>
         </div>
@@ -585,14 +604,27 @@ html:not(.anim) .music__hint,html:not(.anim) .music__arrows{display:none}
       <h2 class="sec-title split" data-split>Feedback</h2>
       <p class="sec-sub" data-reveal>感想</p>
     </div>
-    <p class="feedback__lead" data-reveal>O.Yuki の曲を聴いた感想を聞かせてください。1分で終わります。<br>いただいた感想は O.Yuki 本人に届けます。</p>
-    <div class="feedback__frame" data-reveal>
-      <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSdABjUdU1TPm0ilTkfKEpcCmWzGDjJsZI2HQkI7Qidg3mRzNg/viewform?embedded=true"
-        title="O.Yuki の曲を聴いた感想フォーム" loading="lazy" frameborder="0" marginheight="0" marginwidth="0">読み込んでいます…</iframe>
-    </div>
-    <p class="feedback__alt" data-reveal>
-      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdABjUdU1TPm0ilTkfKEpcCmWzGDjJsZI2HQkI7Qidg3mRzNg/viewform" target="_blank" rel="noopener" data-hover>うまく表示されない場合はこちら（新しいタブで開く） <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 11L11 5M6 5h5v5"/></svg></a>
-    </p>
+    <p class="feedback__lead" data-reveal>O.Yuki の曲を聴いた感想を聞かせてください。2〜3分で終わります。<br>いただいた感想は O.Yuki 本人に届けます。</p>
+    <!-- Googleフォームはページに埋め込まず、大きなボタンから新しいタブで開く（埋め込みだとスクロールが止まるため） -->
+    <!-- サイト用のフォーム（グループの質問なし）。配布用のフォーム（グループの質問あり）は listen.html から開く -->
+    <a class="fb-cta" href="https://forms.gle/nMtsGBmUYSWomFpC6" target="_blank" rel="noopener"
+       data-hover data-track="feedback" data-platform="google_forms" data-location="feedback_section" data-reveal>
+      <span class="fb-cta__glow fb-cta__glow--a" aria-hidden="true"></span>
+      <span class="fb-cta__glow fb-cta__glow--b" aria-hidden="true"></span>
+      <span class="fb-cta__body">
+        <span class="fb-cta__eyebrow"><i aria-hidden="true"></i>2–3 MIN SURVEY</span>
+        <span class="fb-cta__title">感想を送る<small>Send your feedback</small></span>
+        <span class="fb-cta__meta">
+          <span>全12問（必須は8問）</span><span>名前・メールアドレスは不要</span><span>O.Yuki 本人に届きます</span>
+        </span>
+      </span>
+      <span class="fb-cta__go" aria-hidden="true">
+        <svg class="fb-cta__ring" viewBox="0 0 120 120"><defs><path id="fbRing" d="M60,60 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0"/></defs>
+          <text><textPath href="#fbRing">FEEDBACK ・ 感想を送る ・ FEEDBACK ・ 感想を送る ・</textPath></text></svg>
+        <span class="fb-cta__arrow"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 11L11 5M6 5h5v5"/></svg></span>
+      </span>
+    </a>
+    <p class="fb-cta__note" data-reveal>※ Googleフォームが新しいタブで開きます。</p>
   </section>
 
   <!-- CONTACT -->
@@ -778,7 +810,7 @@ const pad = n => String(n).padStart(2,'0');
    ・リンクには data-track（種類）/ data-platform（行き先）/ data-location（押した場所）を付け、クリックは下の1か所でまとめて拾う */
 const trackEvent = (name, params) => { try { gtag('event', name, params || {}); } catch(e) {} };
 const trackAttrs = (kind, platform, location) => ` data-track="${kind}" data-platform="${esc(platform)}" data-location="${location}"`;
-const CLICK_EVENTS = { sns:'sns_click', contact:'contact_click', music_platform:'music_platform_click' };
+const CLICK_EVENTS = { sns:'sns_click', contact:'contact_click', music_platform:'music_platform_click', feedback:'feedback_click' };
 document.addEventListener('click', e => {
   const a = e.target.closest('a[data-track]'); if (!a) return;
   const name = CLICK_EVENTS[a.dataset.track]; if (!name) return;
@@ -941,28 +973,6 @@ Object.entries(ORBS).forEach(([id, list]) => {
     sec.prepend(o);
   });
 });
-
-/* ---------- 感想フォーム：送信後の余白をなくす ----------
-   Googleフォームは別サイトなので中身の高さは読めない。そのかわり「読み込み回数」で判断する。
-   1回目＝フォーム、2回目＝送信完了画面、3回目＝「別の回答を送信」でフォームに戻る…の繰り返し */
-(() => {
-  const frame = $('.feedback__frame'), iframe = frame && $('iframe', frame);
-  if (!iframe) return;
-  let loads = 0;
-  iframe.addEventListener('load', () => {
-    loads++;
-    const sent = loads % 2 === 0;
-    if (sent === frame.classList.contains('is-sent')) return;
-    frame.classList.toggle('is-sent', sent);
-    // 送信完了画面が出た＝送信したと推定して記録（実際の回答数とずれることがある）
-    if (sent) trackEvent('feedback_submit');
-    // 高さが変わり終わってから、スクロール演出の位置を計算し直す
-    setTimeout(() => { window.ScrollTrigger && ScrollTrigger.refresh(); }, 650);
-    // 完了画面（またはフォームの先頭）が見える位置まで戻す
-    const y = frame.getBoundingClientRect().top + scrollY - 120;
-    window.lenis ? lenis.scrollTo(y, { duration:1.2 }) : scrollTo({ top:y, behavior:'smooth' });
-  });
-})();
 
 /* ---------- preview player（試聴） ----------
    同時に鳴るのは1曲だけ。最新リリース欄と詳細画面は同じ曲なら同じ再生状態を表示 */
